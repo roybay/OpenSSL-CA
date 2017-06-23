@@ -2,21 +2,21 @@ OpenSSL Self Signed Certificate CA
 ================================== 
 Create the Root CA
 ------------------
-Create A directory structure to keep track of signed certificate 
+0. Create A directory structure to keep track of signed certificate 
 
-Make CA folder \
-mkdir ca \
-mkdir certs crl newcerts private \
-chmod 700 private \
-touch index.txt \
-echo 1000 > serial 
+ Make CA folder \
+ mkdir ca \
+ mkdir certs crl newcerts private \
+ chmod 700 private \
+ touch index.txt \
+ echo 1000 > serial 
  
-Prepare configuration file: 
+0. Prepare configuration file: 
 
 vi openssl.cnf \
 (Find the detail form reference link above)
  
-Create the Root Key
+0. Create the Root Key
 
 openssl genrsa -aes256 -out private/ca.key.pem 4096 \
 Enter Password \
@@ -24,7 +24,7 @@ Confirm Password \
 Give a read permission \
 chmod 400 private/ca.key \
  
-Create the Root Certificate
+0. Create the Root Certificate
 
 openssl req -config openssl.cnf \
 -key private/ca.key \
