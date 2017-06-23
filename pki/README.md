@@ -6,5 +6,5 @@
 ./pki-script [type]
 
 	Type: arl, crl, init
-        Ex: ./pki-scripts arl
-        If OpenSSL folder is exist, ignore the initial configuration (init)
+	Ex: ./pki-scripts arl
+	If OpenSSL folder is exist, ignore the initial configuration (init)
