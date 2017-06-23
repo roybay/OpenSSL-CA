@@ -10,9 +10,12 @@ usage(){
 	clear
 	echo "usage:$PRG ..." >&2
 	echo -e "\t./pki-script [type] [Common Name]"
-	echo -e "\t\tType: user, server, arl, crl, init\n"
-    	echo -e "\t\tEx: ./pki-scripts user rbahian_tst"
-    	echo -e "\t\tEx: ./pki-scripts arl"
+	echo -e "\t\tType: user, server, revokeCert, revokeAuth, verify\n"
+	echo -e "\t\tEx: ./pki-scripts user rbahian_tst\n"
+
+	echo -e "\t./pki-script [type]"
+	echo -e "\t\tType: arl, crl, init\n"
+	echo -e "\t\tEx: ./pki-scripts arl"
 	echo -e "\t\tIf OpenSSL folder is exist, ignore the initial configuration (init)\n"
 
 }
@@ -55,6 +58,13 @@ function createRootCA(){
 	echo "Verifing Root CA"
 	openssl x509 -noout -text -in $ROOTDIR/certs/$ROOTCA.crt
 	echo "Root CA has been created succesfully!"
+}
+
+function verifyCert(){
+	CERT=$1
+
+	echo "Verfiying $CERT Certificate"
+	openssl verify -crl_check -CAfile $INTDIR/certs/$CACHAIN.crt $INTDIR/certs/$CERT.crt
 }
 
 function createIntermediateCA(){
@@ -158,8 +168,18 @@ function revokeCert(){
 	echo "Revoke $CERT Certificate"
 	openssl ca -config $INTDIR/openssl.cnf -revoke $INTDIR/certs/$CERT.crt -passin pass:$INTCAPW
 
-	echo "Verfiying $CERT Certificate"
-	openssl verify -CAfile $INTDIR/certs/$CACHAIN.crt $INTDIR/certs/$CERT.crt
+	echo "Remove $CACHAIN"
+	rm $INTDIR/certs/$CACHAIN.crt
+
+	echo "Creating the new certfication chain"
+	cat $ROOTDIR/certs/$ROOTCA.crt $INTDIR/certs/$INTCA.crt $INTDIR/crl/$INTCA.crl > $INTDIR/certs/$CACHAIN.crt
+
+	echo "Giving read permision to CA Chain Cert"
+	chmod 444 $INTDIR/certs/$CACHAIN.crt
+	
+	verifyCert $CERT
+
+	echo "Intermediate CA has been created succesfully!"
 }
 
 function revokeAuth(){
@@ -210,6 +230,9 @@ case "$TYPE" in
 	'revokeAuth')
 		revokeAuth $CERTNAME
 		createARL
+		;;
+	'verify')
+		verifyCert $CERTNAME
 		;;		
 esac
 
