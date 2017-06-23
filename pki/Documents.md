@@ -11,119 +11,135 @@ Create the Root CA
        touch index.txt \
        echo 1000 > serial 
  
-0. Prepare configuration file: 
+1. Prepare configuration file: 
        
        vi openssl.cnf \
        (Find the detail form reference link above)
  
-0. Create the Root Key
-
-openssl genrsa -aes256 -out private/ca.key.pem 4096 \
-Enter Password \
-Confirm Password \
-Give a read permission \
-chmod 400 private/ca.key \
+1. Create the Root Key
+       
+       openssl genrsa -aes256 -out private/ca.key.pem 4096 \
+       Enter Password \
+       Confirm Password \
+       Give a read permission \
+       chmod 400 private/ca.key 
  
-0. Create the Root Certificate
-
-openssl req -config openssl.cnf \
--key private/ca.key \
--new -x509 \
--days 7300 \
--sha256 \
--extensions v3_ca \
--out certs/ca.cert \
-Enter ca.kay.pem password / Password1 \
-Enter required fields value
+1. Create the Root Certificate
+       
+       openssl req -config openssl.cnf \
+       -key private/ca.key \
+       -new -x509 \
+       -days 7300 \
+       -sha256 \
+       -extensions v3_ca \
+       -out certs/ca.cert \
+       
+       Enter ca.kay.pem password / Password1 \
+       Enter required fields value
  
-Verify Root Certificate:
+1. Verify Root Certificate:
 
-openssl x509 -noout -text -in certs/ca.crt 
+       openssl x509 -noout -text -in certs/ca.crt 
  
 Create the Intermediate CA
 --------------------------
-Create Intermediate Certificate (purpose of keeping Root Cert isolated)
+1. Create Intermediate Certificate (purpose of keeping Root Cert isolated)
 
-mkdir ca/intermediate \
-cd ca/intermediate \
-mkdir certs crl csr newcerts private \
-chmod 700 private \
-touch index.txt \
-echo 1000 > serial \
-echo 1000 > crlnumber (purpose of keep track of revocation list)
+       mkdir ca/intermediate \
+       cd ca/intermediate \
+       mkdir certs crl csr newcerts private \
+       chmod 700 private \
+       touch index.txt \
+       echo 1000 > serial \
+       echo 1000 > crlnumber (purpose of keep track of revocation list)
  
-Create intermediate configuration file: (only few things are different)
- 
-Create the intermediate Key
+1. Create intermediate configuration file: (only few things are different)
 
-Go to  ca folder \
-openssl genrsa -aes256 -out intermediate/private/intermediate.key 4096 \
-Enter intermediate.key password / Password2 \
-Verify Password \
-Give a read permission \
-chmod 400 intermediate/private/intermediate.key
- 
-Create intermediate Certificate Signing Request (CSR)
+1. Create the intermediate Key
 
-openssl req -config intermediate/openssl.cnf \
--new \
--sha256 \
--key intermediate/private/intermediate.key \
--out intermediate/csr/intermediate.csr
-Enter intermediate.key password
-Enter required fields value
-Common name must be different
+       Go to  ca folder \
+       openssl genrsa -aes256 -out intermediate/private/intermediate.key 4096 \
+       Enter intermediate.key password / Password2 \
+       Verify Password \
+       Give a read permission \
+       chmod 400 intermediate/private/intermediate.key
  
-Sign the Intermediate CSR via the RootCA:
-openssl ca \
--config openssl.cnf \
--extensions v3_intermediate_ca \
--days 3650 \
--notext \
--md sha256 \
--in intermediate/csr/intermediate.csr \
--out intermediate/certs/intermediate.crt
-Enter RootCa Password
-Enter Y for signing the certificate
-Give a read permission:
-chmod 444 intermediate/certs/intermediate.crt
+1. Create intermediate Certificate Signing Request (CSR)
+       
+       openssl req -config intermediate/openssl.cnf \
+       -new \
+       -sha256 \
+       -key intermediate/private/intermediate.key \
+       -out intermediate/csr/intermediate.csr
+       
+       Enter intermediate.key password
+       Enter required fields value
+       Common name must be different
  
-Not: ca/index.txt now has the intermadiate certification reference do not add or delete this file
+1. Sign the Intermediate CSR via the RootCA:
+
+       openssl ca \
+       -config openssl.cnf \
+       -extensions v3_intermediate_ca \
+       -days 3650 \
+       -notext \
+       -md sha256 \
+       -in intermediate/csr/intermediate.csr \
+       -out intermediate/certs/intermediate.crt
+       
+       Enter RootCa Password
+       Enter Y for signing the certificate
+
+1. Give a read permission:
+       
+       chmod 444 intermediate/certs/intermediate.crt
+       Not: ca/index.txt now has the intermadiate certification reference do not add or delete this file
  
+1. Verify Intermediate Cert:
+
+       openssl verify -CAfile certs/ca.crt intermediate/certs/intermediate.crt
  
-Verify Intermediate Cert:
-openssl verify -CAfile certs/ca.crt intermediate/certs/intermediate.crt
- 
-Create the Certification Chain File: 
-cat intermediate/certs/intermediate.crt \
-certs/ca.crt > intermediate/certs/ca-chain.crt
-Give a read permission:
-chmod 444 intermediate/certs/ca-chain.crt
+1. Create the Certification Chain File: 
+       
+       cat intermediate/certs/intermediate.crt \
+       certs/ca.crt > intermediate/certs/ca-chain.crt
+
+1. Give a read permission:
+       
+       chmod 444 intermediate/certs/ca-chain.crt
  
 Sign Serve and Client Certificates
-    Create a key
-openssl genrsa -aes256 -out intermediate/private/www.roylab.com.key 2048
-Enter password / Password3
-Verify the password
-    Give read permission
-chmod 400 intermediate/private/www.roylab.com.key
+----------------------------------
+1. Create a key
+
+       openssl genrsa -aes256 -out intermediate/private/www.roylab.com.key 2048
+       
+       Enter password / Password3
+       Verify the password
+       
+       Give read permission
+       chmod 400 intermediate/private/www.roylab.com.key
+       
+       openssl genrsa -aes256 -out intermediate/private/rbahian.key 2048
+       
+       Enter password / Password3
+       Verify the password
+       
+       Give read permission
+       chmod 400 intermediate/private/rbahian.key
  
-openssl genrsa -aes256 -out intermediate/private/rbahian.key 2048
-Enter password / Password3
-Verify the password
-    Give read permission
-chmod 400 intermediate/private/rbahian.key
- 
-Create a CSR
-openssl req \
--config intermediate/openssl.cnf \
--key intermediate/private/www.roylab.com.key \
--new \
--sha256 \
--out intermediate/csr/www.roylab.com.csr
-Enter www.example.com.key.pem password
-Enter required fields value
-Common name www.roylab.com
+1. Create a CSR
+
+       openssl req \
+       -config intermediate/openssl.cnf \
+       -key intermediate/private/www.roylab.com.key \
+       -new \
+       -sha256 \
+       -out intermediate/csr/www.roylab.com.csr
+       
+       Enter www.example.com.key.pem password
+       Enter required fields value
+       Common name www.roylab.com
  
 openssl req \
 -config intermediate/openssl.cnf \
