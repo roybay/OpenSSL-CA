@@ -58,6 +58,12 @@ function createRootCA(){
 	echo "Verifing Root CA"
 	openssl x509 -noout -text -in $ROOTDIR/certs/$ROOTCA.crt
 	echo "Root CA has been created succesfully!"
+
+	echo "Creating the certfication chain"
+	cat $ROOTDIR/certs/$ROOTCA.crt > $ROOTDIR/certs/$CACHAIN.crt
+
+	echo "Giving read permision to CA Chain Cert"
+	chmod 444 $ROOTDIR/certs/$CACHAIN.crt
 }
 
 function verifyCert(){
@@ -65,6 +71,13 @@ function verifyCert(){
 
 	echo "Verfiying $CERT Certificate"
 	openssl verify -crl_check -CAfile $INTDIR/certs/$CACHAIN.crt $INTDIR/certs/$CERT.crt
+}
+
+function verifyAuth(){
+	AUTH=$1
+
+	echo "Verfiying $AUTH Certificate"
+	openssl verify -crl_check -CAfile $ROOTDIR/certs/$CACHAIN.crt $INTDIR/certs/$AUTH.crt
 }
 
 function createIntermediateCA(){
@@ -92,6 +105,7 @@ function createIntermediateCA(){
 
 	echo "Giving read permision to CA Chain Cert"
 	chmod 444 $INTDIR/certs/$CACHAIN.crt
+
 	echo "Intermediate CA has been created succesfully!"
 
 	echo "Create Trust CA chain"
@@ -144,13 +158,28 @@ function createCert(){
 
 }
 
-function createARL(){
-	#Generating Authority Revokation List
-	echo "Generating Authority Revokation List for $ROOTCA "
-	openssl ca -config $ROOTDIR/openssl.cnf -gencrl -out $ROOTDIR/crl/$ROOTCA.crl -passin pass:$ROOTCAPW
+function createINTCA_CH(){
+	echo "Remove $CACHAIN"
+	sudo rm $INTDIR/certs/$CACHAIN.crt
 
-	echo "Checking the content of ARL "
-	openssl crl -in $ROOTDIR/crl/$ROOTCA.crl -noout -text
+	echo "Creating the new certfication chain"
+	cat $ROOTDIR/certs/$ROOTCA.crt $INTDIR/certs/$INTCA.crt $INTDIR/crl/$INTCA.crl > $INTDIR/certs/$CACHAIN.crt
+
+	echo "Giving read permision to CA Chain Cert"
+	chmod 444 $INTDIR/certs/$CACHAIN.crt
+
+}
+
+function createROOTCA_CH(){
+	echo "Remove $CACHAIN"
+	sudo rm $ROOTDIR/certs/$CACHAIN.crt
+
+	echo "Creating the new certfication chain"
+	cat $ROOTDIR/certs/$ROOTCA.crt $ROOTDIR/crl/$ROOTCA.crl > $ROOTDIR/certs/$CACHAIN.crt
+
+	echo "Giving read permision to CA Chain Cert"
+	chmod 444 $ROOTDIR/certs/$CACHAIN.crt
+
 }
 
 function createCRL(){
@@ -160,6 +189,19 @@ function createCRL(){
 
 	echo "Checking the content of CRL "
 	openssl crl -in $INTDIR/crl/$INTCA.crl -noout -text
+
+	createINTCA_CH 
+}
+
+function createARL(){
+	#Generating Authority Revokation List
+	echo "Generating Authority Revokation List for $ROOTCA "
+	openssl ca -config $ROOTDIR/openssl.cnf -gencrl -out $ROOTDIR/crl/$ROOTCA.crl -passin pass:$ROOTCAPW
+
+	echo "Checking the content of ARL "
+	openssl crl -in $ROOTDIR/crl/$ROOTCA.crl -noout -text
+
+	createROOTCA_CH
 }
 
 function revokeCert(){
@@ -167,19 +209,8 @@ function revokeCert(){
 
 	echo "Revoke $CERT Certificate"
 	openssl ca -config $INTDIR/openssl.cnf -revoke $INTDIR/certs/$CERT.crt -passin pass:$INTCAPW
-
-	echo "Remove $CACHAIN"
-	rm $INTDIR/certs/$CACHAIN.crt
-
-	echo "Creating the new certfication chain"
-	cat $ROOTDIR/certs/$ROOTCA.crt $INTDIR/certs/$INTCA.crt $INTDIR/crl/$INTCA.crl > $INTDIR/certs/$CACHAIN.crt
-
-	echo "Giving read permision to CA Chain Cert"
-	chmod 444 $INTDIR/certs/$CACHAIN.crt
 	
 	verifyCert $CERT
-
-	echo "Intermediate CA has been created succesfully!"
 }
 
 function revokeAuth(){
@@ -188,8 +219,7 @@ function revokeAuth(){
 	echo "Revoke intermediate Certificate"
 	openssl ca -config $ROOTDIR/openssl.cnf -revoke $INTDIR/certs/$AUTH.crt -passin pass:$ROOTCAPW
 
-	echo "Verfiying intermediate Certificate"
-	openssl verify -CAfile $ROOTDIR/certs/$ROOTCA.crt $INTDIR/certs/$AUTH.crt
+	verifyAuth $AUTH
 }
 
 case "$TYPE" in
@@ -231,9 +261,12 @@ case "$TYPE" in
 		revokeAuth $CERTNAME
 		createARL
 		;;
-	'verify')
+	'verifyCert')
 		verifyCert $CERTNAME
-		;;		
+		;;
+	'verifyAuth')
+		verifyAuth $CERTNAME
+		;;			
 esac
 
 
