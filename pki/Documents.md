@@ -207,23 +207,29 @@ Sign Serve and Client Certificates
        rbahian.crt
  
 Certificate Revocation List
-    Publish the CRL at a publicly accessible location 
+---------------------------
+Publish the CRL at a publicly accessible location
+
 http://example.com/intermediate.crl.pem
  
 Not: Some applications vendors have deprecated CRLs and are instead using the Online Certificate Status Protocol (OCSP)
  
-Create the CRL
-openssl ca -config intermediate/openssl.cnf \
--gencrl \
--out intermediate/crl/intermediate.crl
+1. Create the CRL
+
+       openssl ca -config intermediate/openssl.cnf \
+       -gencrl \
+       -out intermediate/crl/intermediate.crl
  
-Check the content of CRL
-openssl crl -in intermediate/crl/intermediate.crl -noout -text
+1. Check the content of CRL
+       
+       openssl crl -in intermediate/crl/intermediate.crl -noout -text
  
-Revoking Certificate 
-openssl ca -config intermediate/openssl.cnf -revoke intermediate/certs/www.example.com.crt
-Need to create CRL again in order to see the revoked cert in the list
+1. Revoking Certificate 
+
+       openssl ca -config intermediate/openssl.cnf -revoke intermediate/certs/www.example.com.crt
+       Need to create CRL again in order to see the revoked cert in the list
  
-Convert
-openssl x509 -in cert.pem -out cert.der -outform DER
+1. Convert
+
+       openssl x509 -in cert.pem -out cert.der -outform DER
  
