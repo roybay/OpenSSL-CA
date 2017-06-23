@@ -11,8 +11,8 @@ usage(){
 	echo "usage:$PRG ..." >&2
 	echo -e "\t./pki-script [type] [Common Name]"
 	echo -e "\t\tType: user, server, arl, crl, init\n"
-    echo -e "\t\tEx: ./pki-scripts user rbahian_tst"
-    echo -e "\t\tEx: ./pki-scripts arl"
+    	echo -e "\t\tEx: ./pki-scripts user rbahian_tst"
+    	echo -e "\t\tEx: ./pki-scripts arl"
 	echo -e "\t\tIf OpenSSL folder is exist, ignore the initial configuration (init)\n"
 
 }
@@ -159,9 +159,7 @@ function revokeCert(){
 
 function revokeAuth(){
 	AUTH=$1
-echo "temp verify cert"
-	openssl verify -CAfile $ROOTDIR/certs/$ROOTCA.crt $INTDIR/certs/$AUTH.crt
-
+	
 	echo "Revoke intermediate Certificate"
 	openssl ca -config $ROOTDIR/openssl.cnf -revoke $INTDIR/certs/$AUTH.crt -passin pass:$ROOTCAPW
 
