@@ -80,11 +80,11 @@ emailAddress                    = Email Address
 
 # Optionally, specify some defaults.
 countryName_default             = US
-stateOrProvinceName_default     = PA
-localityName_default            = Audubon
-organizationName_default        = PJM
+stateOrProvinceName_default     = NJ
+localityName_default            = Ridgefield
+organizationName_default        = Molpis
 organizationalUnitName_default  = PKI
-emailAddress_default            = <test_user>@pjm.com
+emailAddress_default            = <test_user>@molpis.com
 
 [ v3_ca ]
 # Extensions for a typical CA (`man x509v3_config`).
