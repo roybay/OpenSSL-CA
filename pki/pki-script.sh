@@ -154,7 +154,12 @@ function createCRL(){
 
 function revokeCert(){
 	CERT=$1
+
+	echo "Revoke $CERT Certificate"
 	openssl ca -config $INTDIR/openssl.cnf -revoke $INTDIR/certs/$CERT.crt -passin pass:$INTCAPW
+
+	echo "Verfiying $CERT Certificate"
+	openssl verify -CAfile $INTDIR/certs/$INTCA.crt $INTDIR/certs/$CERT.crt
 }
 
 function revokeAuth(){
