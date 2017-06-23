@@ -159,7 +159,7 @@ function revokeCert(){
 	openssl ca -config $INTDIR/openssl.cnf -revoke $INTDIR/certs/$CERT.crt -passin pass:$INTCAPW
 
 	echo "Verfiying $CERT Certificate"
-	openssl verify -CAfile $INTDIR/certs/$INTCA.crt $INTDIR/certs/$CERT.crt
+	openssl verify -CAfile $INTDIR/certs/$CACHAIN.crt $INTDIR/certs/$CERT.crt
 }
 
 function revokeAuth(){
