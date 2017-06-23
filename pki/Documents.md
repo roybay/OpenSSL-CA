@@ -4,61 +4,70 @@ Check the automation script… PJM project.
  
  
 Create the Root CA
-    Create A directory structure to keep track of signed certificate
-Make CA folder 
-mkdir ca
-mkdir certs crl newcerts private
-chmod 700 private
-touch index.txt
-echo 1000 > serial
+------------------
+Create A directory structure to keep track of signed certificate 
+
+Make CA folder \
+mkdir ca \
+mkdir certs crl newcerts private \
+chmod 700 private \
+touch index.txt \
+echo 1000 > serial 
  
-Prepare configuration file:
-vi openssl.cnf 
+Prepare configuration file: 
+
+vi openssl.cnf \
 (Find the detail form reference link above)
  
 Create the Root Key
-openssl genrsa -aes256 -out private/ca.key.pem 4096
-Enter Password
-Confirm Password
-Give a read permission
-chmod 400 private/ca.key
+
+openssl genrsa -aes256 -out private/ca.key.pem 4096 \
+Enter Password \
+Confirm Password \
+Give a read permission \
+chmod 400 private/ca.key \
  
 Create the Root Certificate
+
 openssl req -config openssl.cnf \
 -key private/ca.key \
 -new -x509 \
 -days 7300 \
 -sha256 \
 -extensions v3_ca \
--out certs/ca.cert
-Enter ca.kay.pem password / Password1
+-out certs/ca.cert \
+Enter ca.kay.pem password / Password1 \
 Enter required fields value
  
 Verify Root Certificate:
-openssl x509 -noout -text -in certs/ca.crt
- 
+
+openssl x509 -noout -text -in certs/ca.crt 
  
 Create the Intermediate CA
-    Create Intermediate Certificate (purpose of keeping Root Cert isolated)
-mkdir ca/intermediate
-cd ca/intermediate
-mkdir certs crl csr newcerts private
-chmod 700 private
-touch index.txt
-echo 1000 > serial
+--------------------------
+Create Intermediate Certificate (purpose of keeping Root Cert isolated)
+
+mkdir ca/intermediate \
+cd ca/intermediate \
+mkdir certs crl csr newcerts private \
+chmod 700 private \
+touch index.txt \
+echo 1000 > serial \
 echo 1000 > crlnumber (purpose of keep track of revocation list)
  
 Create intermediate configuration file: (only few things are different)
  
 Create the intermediate Key
-Go to  ca folder
-openssl genrsa -aes256 -out intermediate/private/intermediate.key 4096
-Enter intermediate.key password / Password2
-Verify Password
-Give a read permission
+
+Go to  ca folder \
+openssl genrsa -aes256 -out intermediate/private/intermediate.key 4096 \
+Enter intermediate.key password / Password2 \
+Verify Password \
+Give a read permission \
 chmod 400 intermediate/private/intermediate.key
  
 Create intermediate Certificate Signing Request (CSR)
+
 openssl req -config intermediate/openssl.cnf \
 -new \
 -sha256 \
