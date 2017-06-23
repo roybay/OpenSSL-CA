@@ -1,8 +1,5 @@
 OpenSSL Self Signed Certificate CA
- 
-Check the automation script… PJM project. 
- 
- 
+================================== 
 Create the Root CA
 ------------------
 Create A directory structure to keep track of signed certificate 
