@@ -141,61 +141,70 @@ Sign Serve and Client Certificates
        Enter required fields value
        Common name www.roylab.com
  
-openssl req \
--config intermediate/openssl.cnf \
--key intermediate/private/rbahian.key \
--new \
--sha256 \
--out intermediate/csr/rbahian.csr
-Enter roy.bahian.key.pem password
-Enter required fields value
-Common name roy.bahian 
+       openssl req \
+       -config intermediate/openssl.cnf \
+       -key intermediate/private/rbahian.key \
+       -new \
+       -sha256 \
+       -out intermediate/csr/rbahian.csr
+
+       Enter roy.bahian.key.pem password
+       Enter required fields value
+       Common name roy.bahian 
  
-Sign the CSR via Intermediate CA 
-Not: server_cert or usr_cert extension need to be used
-openssl ca \
--config intermediate/openssl.cnf \
--extensions server_cert -days 375 \
--notext \
--md sha256 \
--in intermediate/csr/www.roylab.com.csr \
--out intermediate/certs/www.roylab.com.crt
-Enter IntermediateCA password
-Enter Y for signing the certificate
-Give a read permission:
-chmod 444 intermediate/certs/www.roylab.com.crt
+1. Sign the CSR via Intermediate CA 
+
+       Not: server_cert or usr_cert extension need to be used
+       openssl ca \
+       -config intermediate/openssl.cnf \
+       -extensions server_cert -days 375 \
+       -notext \
+       -md sha256 \
+       -in intermediate/csr/www.roylab.com.csr \
+       -out intermediate/certs/www.roylab.com.crt
+
+       Enter IntermediateCA password
+       Enter Y for signing the certificate
+
+       Give a read permission:     
+       chmod 444 intermediate/certs/www.roylab.com.crt
  
-openssl ca \
--config intermediate/openssl.cnf \
--extensions usr_cert -days 375 \
--notext \
--md sha256 \
--in intermediate/csr/rbahian.csr \
--out intermediate/certs/rbahian.crt
-Enter IntermediateCA password
-Enter Y for signing the certificate
-Give a read permission:
-chmod 444 intermediate/certs/rbahian.crt
+       openssl ca \
+       -config intermediate/openssl.cnf \
+       -extensions usr_cert -days 375 \
+       -notext \
+       -md sha256 \
+       -in intermediate/csr/rbahian.csr \
+       -out intermediate/certs/rbahian.crt
+
+       Enter IntermediateCA password
+       Enter Y for signing the certificate
+       
+       Give a read permission:
+       chmod 444 intermediate/certs/rbahian.crt
  
-Not: ca/intermediate//index.txt now has the new certification reference do not add or delete this file
+       Not: ca/intermediate//index.txt now has the new certification reference do not add or delete this file
  
+1. Verify the Certificate
+
+       openssl x509 -noout -text -in intermediate/certs/rbahian.crt
+
+1. Use CA certificate chain to verify the certificate
+
+       openssl verify \
+       -CAfile intermediate/certs/ca-chain.crt \
+       intermediate/certs/rbahian.crt
  
-Verify the Certificate
-openssl x509 -noout -text -in intermediate/certs/rbahian.crt
-Use CA certificate chain to verify the certificate
-openssl verify \
--CAfile intermediate/certs/ca-chain.crt \
-intermediate/certs/rbahian.crt
+1. Deploy the Certificate to the Server 
+
+       Need to be supply below files
+       ca-chain.crt
+       rbahian.key
+       rbahian.crt
  
-Deploy the Certificate to the Server 
-Need to be supply below files
-ca-chain.crt
-rbahian.key
-rbahian.crt
- 
-If third-party CSR is signed then no need to supply private key. 
-ca-chain.crt
-rbahian.crt
+       If third-party CSR is signed then no need to supply private key. 
+       ca-chain.crt
+       rbahian.crt
  
 Certificate Revocation List
     Publish the CRL at a publicly accessible location 
