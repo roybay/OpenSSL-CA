@@ -10,7 +10,7 @@ usage(){
 	clear
 	echo "usage:$PRG ..." >&2
 	echo -e "\t./pki-script [type] [Common Name]"
-	echo -e "\t\tType: user, server, revokeCert, revokeAuth, verify\n"
+	echo -e "\t\tType: user, server, revokeCert, revokeAuth, verifyCert. verifyAuth\n"
 	echo -e "\t\tEx: ./pki-scripts user rbahian_tst\n"
 
 	echo -e "\t./pki-script [type]"
@@ -20,29 +20,17 @@ usage(){
 
 }
 
-function init_dir(){
-
+function createRootCA(){
 	echo "Creating Directory Structure"
-	mkdir OpenSSL OpenSSL/ca OpenSSL/ca/certs OpenSSL/ca/crl OpenSSL/ca/newcerts OpenSSL/ca/private OpenSSL/ca/intermediate OpenSSL/ca/intermediate/certs OpenSSL/ca/intermediate/crl OpenSSL/ca/intermediate/csr OpenSSL/ca/intermediate/newcerts OpenSSL/ca/intermediate/private OpenSSL/ca/intermediate/pkcs12 OpenSSL/ca/intermediate/jks
+	mkdir OpenSSL OpenSSL/ca OpenSSL/ca/certs OpenSSL/ca/crl OpenSSL/ca/newcerts OpenSSL/ca/private 
 
 	chmod 700 $ROOTDIR/private 
-	chmod 700 $INTDIR/private
 	touch $ROOTDIR/index.txt
 	echo 1000 > $ROOTDIR/serial
 	echo 1000 > $ROOTDIR/crlnumber
 
-	touch $INTDIR/index.txt
-	echo 1000 > $INTDIR/serial
-	echo 1000 > $INTDIR/crlnumber
-
 	cp ca.cnf $ROOTDIR/openssl.cnf
 	perl -i -pe 's/RootCertAuth/'$ROOTCA'/g' $ROOTDIR/openssl.cnf
-
-	cp intermediate.cnf $INTDIR/openssl.cnf
-	perl -i -pe 's/IntermediateCertAuth/'$INTCA'/g' $INTDIR/openssl.cnf
-}
-
-function createRootCA(){
 
 	#Create RootCA
 	echo "Creating the RootCA Private Key"
@@ -80,7 +68,22 @@ function verifyAuth(){
 	openssl verify -crl_check -CAfile $ROOTDIR/certs/$CACHAIN.crt $INTDIR/certs/$AUTH.crt
 }
 
-function createIntermediateCA(){
+function createIntermediateCA(){ 
+	INTCA=$1
+	INTDIR=$ROOTDIR/$INTCA
+
+	echo "Creating Directory Structure"
+	mkdir $INTDIR $INTDIR/certs $INTDIR/crl $INTDIR/csr $INTDIR/newcerts $INTDIR/private $INTDIR/pkcs12 $INTDIR/jks
+
+	chmod 700 $INTDIR/private
+	touch $INTDIR/index.txt
+	echo 1000 > $INTDIR/serial
+	echo 1000 > $INTDIR/crlnumber
+
+	cp intermediate.cnf $INTDIR/openssl.cnf
+	perl -i -pe 's/IntermediateCertAuth/'$INTCA'/g' $INTDIR/openssl.cnf
+	perl -i -pe 's/IntermediateCertDirectory/'$INTCA'/g' $INTDIR/openssl.cnf
+
 	#  Generate Intermediate CA certificate
 	echo "Generating Intermadiate CA Private Key"
 	openssl genrsa -aes256 -passout pass:$INTCAPW -out $INTDIR/private/$INTCA.key.pem 4096
@@ -114,9 +117,11 @@ function createIntermediateCA(){
 }
 
 function createCert(){
-	EXTENSION=$1
-	CERTNAME=$2
-	CERTSUBJ=$3
+	INTCA=$1
+	INTDIR=$ROOTDIR/$INTCA
+	EXTENSION=$2
+	CERTNAME=$3
+	CERTSUBJ=$4
 
 	#Generating Servers Certificates
 	echo "Generating  $CERTNAME Private Key"
@@ -149,9 +154,9 @@ function createCert(){
 
 	echo "Create PKCS12 Keystore for $CERTNAME"
 	openssl pkcs12 -export -in $INTDIR/certs/$CERTNAME.crt -inkey $INTDIR/private/$CERTNAME.key.pem -passin pass:$PASSWORD -out $INTDIR/pkcs12/$CERTNAME.p12 -name $CERTNAME -password pass:$PASSWORD	
-	
+echo "test2"
 	$JAVAHOME/keytool -importkeystore -deststorepass $PASSWORD -destkeypass $PASSWORD  -destkeystore $INTDIR/jks/$CERTNAME.jks -srckeystore $INTDIR/pkcs12/$CERTNAME.p12 -srcstoretype PKCS12 -srcstorepass $PASSWORD -alias $CERTNAME	
-	
+echo "test3"
  	# Import the trust CA chain
 	$JAVAHOME/keytool -import -noprompt -trustcacerts -alias $CERTNAME -file $INTDIR/certs/$CERTNAME.crt -keystore $INTDIR/jks/trust.jks -storepass $INTCAPW
 
@@ -159,6 +164,9 @@ function createCert(){
 }
 
 function createINTCA_CH(){
+	INTCA=$1
+	INTDIR=$ROOTDIR/$INTCA
+
 	echo "Remove $CACHAIN"
 	sudo rm $INTDIR/certs/$CACHAIN.crt
 
@@ -183,6 +191,9 @@ function createROOTCA_CH(){
 }
 
 function createCRL(){
+	INTCA=$1
+	INTDIR=$ROOTDIR/$INTCA
+
 	#Generating Certificate Revokation List
 	echo "Generating Certficate Revokation List for $INTCA "
 	openssl ca -config $INTDIR/openssl.cnf -gencrl -out $INTDIR/crl/$INTCA.crl -passin pass:$INTCAPW
@@ -190,7 +201,7 @@ function createCRL(){
 	echo "Checking the content of CRL "
 	openssl crl -in $INTDIR/crl/$INTCA.crl -noout -text
 
-	createINTCA_CH 
+	createINTCA_CH $INTCA
 }
 
 function createARL(){
@@ -225,21 +236,33 @@ function revokeAuth(){
 case "$TYPE" in
 	-h|--help) usage ;;
 	'init')
-		init_dir
 		createRootCA
-		createIntermediateCA
 		COUNTER=0
-	        while [ $COUNTER -lt ${#SERVERS[@]} ]; do
-				createCert server_cert ${SERVERS[$COUNTER]} 'TRUE'
+			while [ $COUNTER -lt ${#INTCAS[@]} ]; do
+				createIntermediateCA ${INTCAS[$COUNTER]} 'TRUE'
+				createCRL ${INTCAS[$COUNTER]}
 				let COUNTER=COUNTER+1
+			done
+		ICOUNT=0
+			while [ $ICOUNT -lt ${#INTCAS[@]} ]; do
+				JCOUNT=0
+			        while [ $JCOUNT -lt ${#SERVERS[@]} ]; do
+						createCert ${INTCAS[$ICOUNT]} server_cert ${SERVERS[$JCOUNT]} 'TRUE'
+						let JCOUNT=JCOUNT+1
+		        	done
+	        	let ICOUNT=ICOUNT+1
 	        done
-		COUNTER=0
-			while [ $COUNTER -lt ${#USERS[@]} ]; do
-                createCert usr_cert ${USERS[$COUNTER]} 'TRUE'
-                let COUNTER=COUNTER+1
+		ICOUNT=0
+			while [ $ICOUNT -lt ${#INTCAS[@]} ]; do
+				JCOUNT=0
+					while [ $JCOUNT -lt ${#USERS[@]} ]; do
+                		createCert ${INTCAS[$ICOUNT]} usr_cert ${USERS[$JCOUNT]} 'TRUE'
+                		let JCOUNT=JCOUNT+1
+            		done
+            	let ICOUNT=ICOUNT+1
             done
 		createARL
-		createCRL	
+			
 		;;
 	'user')
 		createCert usr_cert $CERTNAME 'FALSE'
