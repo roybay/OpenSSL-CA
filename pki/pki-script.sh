@@ -9,12 +9,16 @@ AUTHCA=$3
 usage(){
 	clear
 	echo "usage:$PRG ..." >&2
-	echo -e "\t./pki-script [type] [Common Name]"
-	echo -e "\t\tType: user, server, revokeCert, revokeAuth, verifyCert. verifyAuth\n"
+	echo -e "\t./pki-script [type] [Common Name] [CA Name]"
+	echo -e "\t\tType: user, server, revokeCert, verifyCert\n"
 	echo -e "\t\tEx: ./pki-scripts user rbahian_tst\n"
 
+	echo -e "\t./pki-script [type] [CA Name]"
+	echo -e "\t\tType: crl, revokeAuth, verifyAuth\n"
+	echo -e "\t\tEx: ./pki-scripts crl authority.molpis.com\n"
+
 	echo -e "\t./pki-script [type]"
-	echo -e "\t\tType: arl, crl, init\n"
+	echo -e "\t\tType: arl, init\n"
 	echo -e "\t\tEx: ./pki-scripts arl"
 	echo -e "\t\tIf OpenSSL folder is exist, ignore the initial configuration (init)\n"
 
