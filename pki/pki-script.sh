@@ -5,7 +5,7 @@
 PRG=$0
 TYPE=$1
 CERTNAME=$2
-
+AUTHCA=$3
 usage(){
 	clear
 	echo "usage:$PRG ..." >&2
@@ -56,16 +56,19 @@ function createRootCA(){
 
 function verifyCert(){
 	CERT=$1
+	INTCA=$2
+	INTDIR=$ROOTDIR/$INTCA
 
 	echo "Verfiying $CERT Certificate"
 	openssl verify -crl_check -CAfile $INTDIR/certs/$CACHAIN.crt $INTDIR/certs/$CERT.crt
 }
 
 function verifyAuth(){
-	AUTH=$1
+	INTCA=$1
+	INTDIR=$ROOTDIR/$INTCA
 
 	echo "Verfiying $AUTH Certificate"
-	openssl verify -crl_check -CAfile $ROOTDIR/certs/$CACHAIN.crt $INTDIR/certs/$AUTH.crt
+	openssl verify -crl_check -CAfile $ROOTDIR/certs/$CACHAIN.crt $INTDIR/certs/$INTCA.crt
 }
 
 function createIntermediateCA(){ 
@@ -117,11 +120,11 @@ function createIntermediateCA(){
 }
 
 function createCert(){
-	INTCA=$1
+	EXTENSION=$1
+	CERTNAME=$2
+	CERTSUBJ=$3
+	INTCA=$4
 	INTDIR=$ROOTDIR/$INTCA
-	EXTENSION=$2
-	CERTNAME=$3
-	CERTSUBJ=$4
 
 	#Generating Servers Certificates
 	echo "Generating  $CERTNAME Private Key"
@@ -154,9 +157,9 @@ function createCert(){
 
 	echo "Create PKCS12 Keystore for $CERTNAME"
 	openssl pkcs12 -export -in $INTDIR/certs/$CERTNAME.crt -inkey $INTDIR/private/$CERTNAME.key.pem -passin pass:$PASSWORD -out $INTDIR/pkcs12/$CERTNAME.p12 -name $CERTNAME -password pass:$PASSWORD	
-echo "test2"
+
 	$JAVAHOME/keytool -importkeystore -deststorepass $PASSWORD -destkeypass $PASSWORD  -destkeystore $INTDIR/jks/$CERTNAME.jks -srckeystore $INTDIR/pkcs12/$CERTNAME.p12 -srcstoretype PKCS12 -srcstorepass $PASSWORD -alias $CERTNAME	
-echo "test3"
+
  	# Import the trust CA chain
 	$JAVAHOME/keytool -import -noprompt -trustcacerts -alias $CERTNAME -file $INTDIR/certs/$CERTNAME.crt -keystore $INTDIR/jks/trust.jks -storepass $INTCAPW
 
@@ -217,20 +220,23 @@ function createARL(){
 
 function revokeCert(){
 	CERT=$1
+	INTCA=$2
+	INTDIR=$ROOTDIR/$INTCA
 
 	echo "Revoke $CERT Certificate"
 	openssl ca -config $INTDIR/openssl.cnf -revoke $INTDIR/certs/$CERT.crt -passin pass:$INTCAPW
 	
-	verifyCert $CERT
+	verifyCert $CERT $INTCA
 }
 
 function revokeAuth(){
-	AUTH=$1
+	INTCA=$1
+	INTDIR=$ROOTDIR/$INTCA
 	
 	echo "Revoke intermediate Certificate"
-	openssl ca -config $ROOTDIR/openssl.cnf -revoke $INTDIR/certs/$AUTH.crt -passin pass:$ROOTCAPW
+	openssl ca -config $ROOTDIR/openssl.cnf -revoke $INTDIR/certs/$INTCA.crt -passin pass:$ROOTCAPW
 
-	verifyAuth $AUTH
+	verifyAuth $INTCA
 }
 
 case "$TYPE" in
@@ -239,7 +245,7 @@ case "$TYPE" in
 		createRootCA
 		COUNTER=0
 			while [ $COUNTER -lt ${#INTCAS[@]} ]; do
-				createIntermediateCA ${INTCAS[$COUNTER]} 'TRUE'
+				createIntermediateCA ${INTCAS[$COUNTER]}
 				createCRL ${INTCAS[$COUNTER]}
 				let COUNTER=COUNTER+1
 			done
@@ -247,7 +253,7 @@ case "$TYPE" in
 			while [ $ICOUNT -lt ${#INTCAS[@]} ]; do
 				JCOUNT=0
 			        while [ $JCOUNT -lt ${#SERVERS[@]} ]; do
-						createCert ${INTCAS[$ICOUNT]} server_cert ${SERVERS[$JCOUNT]} 'TRUE'
+						createCert server_cert ${SERVERS[$JCOUNT]} 'TRUE' ${INTCAS[$ICOUNT]}
 						let JCOUNT=JCOUNT+1
 		        	done
 	        	let ICOUNT=ICOUNT+1
@@ -256,7 +262,7 @@ case "$TYPE" in
 			while [ $ICOUNT -lt ${#INTCAS[@]} ]; do
 				JCOUNT=0
 					while [ $JCOUNT -lt ${#USERS[@]} ]; do
-                		createCert ${INTCAS[$ICOUNT]} usr_cert ${USERS[$JCOUNT]} 'TRUE'
+                		createCert usr_cert ${USERS[$JCOUNT]} 'TRUE' ${INTCAS[$ICOUNT]}
                 		let JCOUNT=JCOUNT+1
             		done
             	let ICOUNT=ICOUNT+1
@@ -265,27 +271,30 @@ case "$TYPE" in
 			
 		;;
 	'user')
-		createCert usr_cert $CERTNAME 'FALSE'
+		createCert usr_cert $CERTNAME 'FALSE' $AUTHCA
 		;;
 	'server')
-		createCert server_cert $CERTNAME 'FALSE' 
+		createCert server_cert $CERTNAME 'FALSE' $AUTHCA
+		;;
+	'ca')
+		createIntermediateCA $CERTNAME
 		;;
 	'arl')
 		createARL 
 		;;
 	'crl')
-		createCRL 
+		createCRL $CERTNAME
 		;;	
 	'revokeCert')
-		revokeCert $CERTNAME
-		createCRL
+		revokeCert $CERTNAME $AUTHCA
+		createCRL $AUTHCA
 		;;
 	'revokeAuth')
 		revokeAuth $CERTNAME
 		createARL
 		;;
 	'verifyCert')
-		verifyCert $CERTNAME
+		verifyCert $CERTNAME $AUTHCA
 		;;
 	'verifyAuth')
 		verifyAuth $CERTNAME
