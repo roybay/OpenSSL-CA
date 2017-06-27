@@ -1,4 +1,4 @@
-This script is design to create below files by using simple script configured by single porpertiy file:
+This script is designed to create below files by using simple script configured by single porpertiy file:
 
       Make Folder Structure 
       Create All Private keys
