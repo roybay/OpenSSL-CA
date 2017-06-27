@@ -14,7 +14,7 @@ usage(){
 	echo -e "\t\tEx: ./pki-scripts user rbahian_tst\n"
 
 	echo -e "\t./pki-script [type] [CA Name]"
-	echo -e "\t\tType: crl, revokeAuth, verifyAuth\n"
+	echo -e "\t\tType: ca, crl, revokeAuth, verifyAuth\n"
 	echo -e "\t\tEx: ./pki-scripts crl authority.molpis.com\n"
 
 	echo -e "\t./pki-script [type]"
