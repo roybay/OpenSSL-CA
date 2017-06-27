@@ -4,7 +4,7 @@ Windows: http://gnuwin32.sourceforge.net/packages/openssl.htm
 
 Modify pki.properties:
 
-OPENSSL=<openssl installation folder>/bin/openssl.exe 
+OPENSSL=\<openssl installation folder\>/bin/openssl.exe 
 
 Need to be used MobaXterm as an terminal
 
